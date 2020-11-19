@@ -84,3 +84,11 @@ class Element:
 
     def getRightFlux(self):
         return getGlobalFlux()[self.k - 1]
+
+    def setLeftUpwindFlux(self, f):
+        # Convert from global to local flux
+        self.flUpwind = (self.dx / 2.0) * f
+
+    def setRightUpwindFlux(self, f):
+        # Convert from global to local flux
+        self.frUpwind = (self.dx / 2.0) * f

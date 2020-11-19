@@ -35,11 +35,15 @@ class Grid:
             prevElement = newElement
 
         self.rightElement = prevElement
+        # Periodic boundary conditions
+        self.leftElement.setLeftElement(self.rightElement)
+        self.rightElement.setRightElement(self.leftElement)
 
     # Check whether using correct flux here
+    # Periodic boundary conditions
     def roeFlux(self, a=1):
         leftElement = self.leftElement
-        for i in range(nx - 1):
+        for i in range(nx):
             rightElement = leftElement.getRightElement()
             ul = leftElement.getRightSolution()
             fl = leftElement.getRightFlux()
@@ -49,6 +53,9 @@ class Grid:
             if ur != ul:
                 au = (fr - fl) / (ur - ul)
             fUpwind = 0.5 * (fl + fr) - 0.5 * (abs(au)) * (ur - ul)
+            leftElement.setRightUpwindFlux(fUpwind)
+            rightElement.setLeftUpwindFlux(fUpwind)
+            leftElement = leftElement.getRightElement()
 
     def plot(self):
         currentElement = self.leftElement
