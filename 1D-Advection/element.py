@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Element:
     def __init__(self, k, dx, x):
@@ -92,3 +93,28 @@ class Element:
     def setRightUpwindFlux(self, f):
         # Convert from global to local flux
         self.frUpwind = (self.dx / 2.0) * f
+
+    # Correction Functions (Radau Polynomials)
+    # Return coefficients for Legendre series
+    def getLeftCorrectionFunction(self):
+        coeff = [0] * self.k
+        coeff.append(1)
+        coeff.append(-1)
+        return ((-1) ** self.k) * 0.5 * np.array(coeff)
+
+    def getRightCorrectionFunction(self):
+        coeff = [0] * self.k
+        coeff.append(1)
+        coeff.append(1)
+        return 0.5 * np.array(coeff)
+
+    # Helper function to check correction functions are defined correctly
+    def plotCorrectionFunctions(self):
+        leftCF = self.getLeftCorrectionFunction()
+        rightCF = self.getRightCorrectionFunction()
+        x = np.linspace(-1.0, 1.0, 100)
+        ly = np.polynomial.legendre.legval(x, leftCF)
+        ry = np.polynomial.legendre.legval(x, rightCF)
+        plt.plot(x, ly)
+        plt.plot(x, ry)
+        plt.show()
