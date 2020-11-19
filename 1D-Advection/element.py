@@ -5,9 +5,11 @@ class Element:
         self.left = None
         self.right = None
         self.k = k
-        self.x = x
+        # Centre of element
+        self.x = x + dx / 2
         self.dx = dx
-        self.solutionPtsVal = np.zeros(k)
+        self.solution = np.zeros(k)
+        self.flux = np.zeros(k)
         # Use equally spaced points for now
         self.solutionPts = np.linspace(-1.0, 1.0, k)
 
@@ -25,21 +27,60 @@ class Element:
 
     def setSolutionPointValues(self, values):
         for x in range(self.k):
-            self.solutionPtsVal[x] = values[x]
-        #self.updateBasis()
+            self.solution[x] = values[x]
+        self.updateBasis()
+        self.updateFlux()
 
     def updateBasis(self):
-        self.basis = np.polynomial.legendre.Legendre.fit(self.solutionPts, self.solutionPtsVal, self.k).convert().coef
+        self.solutionBasis = np.polynomial.legendre.legfit(self.solutionPts, self.solution, self.k - 1)
+        self.solutionGrad = np.polynomial.legendre.legder(self.solutionBasis)
+
+    def updateFlux(self, a=1):
+        self.flux = np.polynomial.legendre.legval(self.solutionPts, a * self.solutionGrad)
+        self.updateFluxBasis()
+
+    def updateFluxBasis(self):
+        self.fluxBasis = np.polynomial.legendre.legfit(self.solutionPts, self.flux, self.k - 1)
+        self.fluxGrad = np.polynomial.legendre.legder(self.fluxBasis)
 
     def getSolution(self):
-        #return np.polynomial.legendre.legval(self.solutionPts, self.basis)
-        return self.solutionPtsVal
+        return np.polynomial.legendre.legval(self.solutionPts, self.solutionBasis)
+        #return self.solution
 
     def getLocalSolutionPoints(self):
         return self.solutionPts
 
     def getGlobalSolutionPoints(self):
-        # Shift solution points from [-1,1] to [0,2]
-        # Then scale to [0,1] and multiply by dx to scale to [0,dx]
-        # Then add x to get global coordinates
-        return self.x + ((1.0 + self.solutionPts) / 2) * self.dx
+        return self.x + ((self.solutionPts) * self.dx) / 2
+
+    def getLocalSolutionGradient(self):
+        return np.polynomial.legendre.legval(self.solutionPts, self.solutionGrad)
+
+    def getGlobalSolutionGradient(self):
+        return (2.0 / self.dx) * self.getLocalSolutionGradient()
+
+    # For now assume a = 1
+    def getLocalFlux(self):
+        return self.flux
+
+    def getGlobalFlux(self):
+        return (2.0 / self.dx) * self.flux
+
+    def getLocalFluxGradient(self):
+        return np.polynomial.legendre.legval(self.solutionPts, self.fluxGrad)
+
+    def getGlobalFluxGradient(self):
+        return (2.0 / self.dx) * self.getLocalFluxGradient()
+
+    # Functions for Roe's Flux
+    def getLeftSolution(self):
+        return self.getSolution()[0]
+
+    def getRightSolution(self):
+        return self.getSolution()[self.k - 1]
+
+    def getLeftFlux(self):
+        return getGlobalFlux()[0]
+
+    def getRightFlux(self):
+        return getGlobalFlux()[self.k - 1]

@@ -34,20 +34,44 @@ class Grid:
 
             prevElement = newElement
 
+        self.rightElement = prevElement
+
+    # Check whether using correct flux here
+    def roeFlux(self, a=1):
+        leftElement = self.leftElement
+        for i in range(nx - 1):
+            rightElement = leftElement.getRightElement()
+            ul = leftElement.getRightSolution()
+            fl = leftElement.getRightFlux()
+            ur = rightElement.getLeftSolution()
+            fr = rightElement.getLeftFlux()
+            au = a
+            if ur != ul:
+                au = (fr - fl) / (ur - ul)
+            fUpwind = 0.5 * (fl + fr) - 0.5 * (abs(au)) * (ur - ul)
+
     def plot(self):
         currentElement = self.leftElement
         yVal = []
         xVal = []
+        fluxVal = []
+        fluxGrad = []
         # Plot solution
         for i in range(self.nx):
             solution = currentElement.getSolution()
+            flux = currentElement.getGlobalFlux()
+            fluxG = currentElement.getGlobalFluxGradient()
             x = i * self.dx
             # Elements share boundaries so don't get right boundary
             for n in range(self.k - 1):
                 yVal.append(solution[n])
                 xVal.append(x + n * (self.dx / (self.k - 1)))
+                fluxVal.append(flux[n])
+                fluxGrad.append(fluxG[n])
 
             currentElement = currentElement.getRightElement()
 
         plt.plot(xVal, yVal)
+        plt.plot(xVal, fluxVal)
+        plt.plot(xVal, fluxGrad)
         plt.show()
