@@ -1,8 +1,12 @@
 import numpy as np
+from numpy.polynomial.polynomial import polyval, polyadd, polyder
 import matplotlib.pyplot as plt
 
+from basis import Basis
+
+# For now assume 4 points
 class Element:
-    def __init__(self, k, dx, x, solptns=0):
+    def __init__(self, k, dx, x, solptns=2, basisFunc=1):
         self.left = None
         self.right = None
         self.k = k
@@ -12,19 +16,15 @@ class Element:
         self.solution = np.zeros(k)
         self.flux = np.zeros(k)
         self.fluxGrad = np.zeros(k)
-        self.fluxContinuous = np.zeros(k)
-        self.fluxContinuousGrad = np.zeros(k)
+        # self.fluxContinuous = np.zeros(k)
+        # self.fluxContinuousGrad = np.zeros(k)
         self.setSolutionPoints(solptns)
-        # Use equally spaced points for now
-        self.solutionPts = np.linspace(-1.0, 1.0, k)
-        # Use Gauss Points
-        #self.solutionPts = np.array([-0.861136, -0.339981, 0.339981, 0.861136])
-        # rk4 data
-        self.k0 = np.zeros(k)
-        self.k1 = np.zeros(k)
-        self.k2 = np.zeros(k)
-        self.k3 = np.zeros(k)
-        self.k4 = np.zeros(k)
+        self.basis = Basis(self.solutionPts)
+        # self.k0 = np.zeros(k)
+        # self.k1 = np.zeros(k)
+        # self.k2 = np.zeros(k)
+        # self.k3 = np.zeros(k)
+        # self.k4 = np.zeros(k)
 
     def setSolutionPoints(self, solptns):
         if solptns == 0:
@@ -33,6 +33,9 @@ class Element:
         if solptns == 1:
             # Use Gauss Points
             self.solutionPts = np.array([-0.861136, -0.339981, 0.339981, 0.861136])
+        if solptns == 2:
+            # Use Lobatto Points
+            self.solutionPts = np.array([-1.0, -0.447214, 0.447214, 1.0])
 
     def setLeftElement(self, l):
         self.left = l
@@ -53,41 +56,37 @@ class Element:
         self.updateFlux()
 
     def updateBasis(self, a=1):
-        self.solutionBasis = ((self.solution[0] * self.getBasis0()) + (self.solution[1] * self.getBasis1()) +
-                              (self.solution[2] * self.getBasis2()) + (self.solution[3] * self.getBasis3()))
-        self.solutionGradBasis = np.polynomial.legendre.legder(self.solutionBasis)
-        self.leftRoeFlux = a * np.polynomial.legendre.legval(-1, self.solutionGradBasis)
-        self.rightRoeFlux = a * np.polynomial.legendre.legval(1, self.solutionGradBasis)
-        self.leftRoeSolution = np.polynomial.legendre.legval(-1, self.solutionBasis)
-        self.rightRoeSolution = np.polynomial.legendre.legval(1, self.solutionBasis)
+        self.solutionBasis = self.basis.getBasis(self.solution)
+        self.leftRoeSolution = polyval(-1.0, self.solutionBasis)
+        self.rightRoeSolution = polyval(1.0, self.solutionBasis)
+        self.leftRoeFlux = a * polyval(-1.0, self.solutionBasis)
+        self.rightRoeFlux = a * polyval(1.0, self.solutionBasis)
 
     def updateFlux(self, a=1):
-        self.flux = np.polynomial.legendre.legval(self.solutionPts, a * self.solutionGradBasis)
+        self.flux = a * self.solution
         self.updateFluxBasis()
-        self.fluxGrad = np.polynomial.legendre.legval(self.solutionPts, a * self.fluxGradBasis)
+        self.fluxGrad = polyval(self.solutionPts, self.fluxGradBasis)
 
     def updateFluxBasis(self):
-        # self.fluxBasis = np.polynomial.legendre.legfit(self.solutionPts, self.flux, self.k - 1)
-        self.fluxBasis = ((self.flux[0] * self.getBasis0()) + (self.flux[1] * self.getBasis1()) +
-                          (self.flux[2] * self.getBasis2()) + (self.flux[3] * self.getBasis3()))
-        self.fluxGradBasis = np.polynomial.legendre.legder(self.fluxBasis)
+        self.fluxBasis = self.basis.getBasis(self.flux)
+        self.fluxGradBasis = polyder(self.fluxBasis)
 
+    # Not a necessary calculation but included just for completeness
     def calculateContinuousFlux(self):
-        correctionFunL = (self.flUpwind - self.flux[0]) * self.getLeftCorrectionFunction()
-        correctionFunR = (self.frUpwind - self.flux[self.k - 1]) * self.getRightCorrectionFunction()
-        self.fluxContinuousBasis = np.polynomial.legendre.legadd(self.fluxBasis, correctionFunL)
-        self.fluxContinuousBasis = np.polynomial.legendre.legadd(self.fluxContinuousBasis, correctionFunR)
-        self.fluxContinuous = np.polynomial.legendre.legval(self.solutionPts, self.fluxContinuousBasis)
+        correctionFunL = (self.flUpwind - self.leftRoeFlux) * self.basis.getLeftCorrectionFunction()
+        correctionFunR = (self.frUpwind - self.rightRoeFlux) * self.basis.getRightCorrectionFunction()
+        self.fluxContinuousBasis = polyadd(self.fluxBasis, correctionFunL)
+        self.fluxContinuousBasis = polyadd(self.fluxContinuousBasis, correctionFunR)
+        self.fluxContinuous = polyval(self.solutionPts, self.fluxContinuousBasis)
 
     def calculateContinuousFluxGradient(self):
-        correctionFunGradL = (self.flUpwind - self.flux[0]) * self.getLeftCorrectionFunctionGrad()
-        correctionFunGradR = (self.frUpwind - self.flux[self.k - 1]) * self.getRightCorrectionFunctionGrad()
-        self.fluxContinuousGradBasis = np.polynomial.legendre.legadd(self.fluxGradBasis, correctionFunGradL)
-        self.fluxContinuousGradBasis = np.polynomial.legendre.legadd(self.fluxContinuousGradBasis, correctionFunGradR)
-        self.fluxContinuousGrad = np.polynomial.legendre.legval(self.solutionPts, self.fluxContinuousGradBasis)
+        correctionFunGradL = (self.flUpwind - self.leftRoeFlux) * self.basis.getLeftCorrectionFunctionGrad()
+        correctionFunGradR = (self.frUpwind - self.rightRoeFlux) * self.basis.getRightCorrectionFunctionGrad()
+        self.fluxContinuousGradBasis = polyadd(self.fluxGradBasis, correctionFunGradL)
+        self.fluxContinuousGradBasis = polyadd(self.fluxContinuousGradBasis, correctionFunGradR)
+        self.fluxContinuousGrad = polyval(self.solutionPts, self.fluxContinuousGradBasis)
 
     def getSolution(self):
-        #return np.polynomial.legendre.legval(self.solutionPts, self.solutionBasis)
         return self.solution.copy()
 
     def getLocalSolutionPoints(self):
@@ -96,29 +95,17 @@ class Element:
     def getGlobalSolutionPoints(self):
         return self.x + ((self.solutionPts) * self.dx) / 2
 
-    def getLocalSolutionGradient(self):
-        return np.polynomial.legendre.legval(self.solutionPts, self.solutionGradBasis)
-
-    def getGlobalSolutionGradient(self):
-        return (2.0 / self.dx) * self.getLocalSolutionGradient()
-
-    def getLocalFlux(self):
+    def getFlux(self):
         return self.flux.copy()
 
-    def getGlobalFlux(self):
-        return (2.0 / self.dx) * self.flux
-
     def getLocalFluxGradient(self):
-        return np.polynomial.legendre.legval(self.solutionPts, self.fluxGradBasis)
+        return self.fluxGrad.copy()
 
     def getGlobalFluxGradient(self):
         return (2.0 / self.dx) * self.getLocalFluxGradient()
 
-    def getLocalContinuousFlux(self):
+    def getContinuousFlux(self):
         return self.fluxContinuous.copy()
-
-    def getGlobalContinuousFlux(self):
-        return (2.0 / self.dx) * self.getLocalContinuousFlux()
 
     def getLocalContinuousFluxGradient(self):
         return self.fluxContinuousGrad.copy()
@@ -129,23 +116,6 @@ class Element:
     def getdudt(self):
         return -1.0 * self.getGlobalContinuousFluxGradient()
 
-    # Basis functions (Legendre Polynomials)
-    def getBasis0(self):
-        yVals = np.array([1.0, 0.0, 0.0, 0.0])
-        return np.polynomial.legendre.legfit(self.solutionPts, yVals, self.k - 1)
-
-    def getBasis1(self):
-        yVals = np.array([0.0, 1.0, 0.0, 0.0])
-        return np.polynomial.legendre.legfit(self.solutionPts, yVals, self.k - 1)
-
-    def getBasis2(self):
-        yVals = np.array([0.0, 0.0, 1.0, 0.0])
-        return np.polynomial.legendre.legfit(self.solutionPts, yVals, self.k - 1)
-
-    def getBasis3(self):
-        yVals = np.array([0.0, 0.0, 0.0, 1.0])
-        return np.polynomial.legendre.legfit(self.solutionPts, yVals, self.k - 1)
-
     # Functions for Roe's Flux
     def getLeftSolution(self):
         return self.leftRoeSolution
@@ -153,21 +123,21 @@ class Element:
     def getRightSolution(self):
         return self.rightRoeSolution
 
-    def getLeftRoeFlux(self, a=1):
+    def getLeftRoeFlux(self):
         # Convert from local to global
-        return a * (2.0 / self.dx) * self.leftRoeFlux
+        return self.leftRoeFlux
 
-    def getRightRoeFlux(self, a=1):
+    def getRightRoeFlux(self):
         # Convert from local to global
-        return a * (2.0 / self.dx) * self.rightRoeFlux
+        return self.rightRoeFlux
 
     def setLeftUpwindFlux(self, f):
         # Convert from global to local flux
-        self.flUpwind = (self.dx / 2.0) * f
+        self.flUpwind = f
 
     def setRightUpwindFlux(self, f):
         # Convert from global to local flux
-        self.frUpwind = (self.dx / 2.0) * f
+        self.frUpwind = f
 
     # Functions for rk4
     def storeK0(self):
@@ -175,93 +145,50 @@ class Element:
 
     def storeK1AndUpdate(self, dt):
         self.k1 = self.getdudt().copy()
-        # self.setSolutionPointValues(self.k0 + dt * (self.k1 / 2))
-        self.setSolutionPointValues(self.getSolution() + (dt / 2.0) * self.k1)
+        self.setSolutionPointValues(self.k0 + (dt / 2.0) * self.k1)
 
     def storeK2AndUpdate(self, dt):
         self.k2 = self.getdudt().copy()
-        # self.setSolutionPointValues(self.k0 + dt * (self.k2 / 2))
-        self.setSolutionPointValues(self.getSolution() + (dt / 2.0) * self.k2)
+        self.setSolutionPointValues(self.k0 + dt * (self.k2 / 2))
 
     def storeK3AndUpdate(self, dt):
         self.k3 = self.getdudt().copy()
-        # self.setSolutionPointValues(self.k0 + dt * self.k3)
-        self.setSolutionPointValues(self.getSolution() + dt * self.k3)
+        self.setSolutionPointValues(self.k0 + dt * self.k3)
 
     def storeK4AndUpdate(self, dt):
         self.k4 = self.getdudt().copy()
         vals = self.k0 + (dt / 6.0) * (self.k1 + 2*self.k2 + 2*self.k3 + self.k4)
         self.setSolutionPointValues(vals)
 
-    # Correction Functions (Radau Polynomials)
-    # Return coefficients for Legendre series
-    def getLeftCorrectionFunction(self):
-        coeff = [0] * self.k
-        coeff.append(1)
-        coeff.append(-1)
-        return ((-1) ** self.k) * 0.5 * np.array(coeff)
-
-    def getRightCorrectionFunction(self):
-        coeff = [0] * self.k
-        coeff.append(1)
-        coeff.append(1)
-        return 0.5 * np.array(coeff)
-
-    def getLeftCorrectionFunctionGrad(self):
-        coeff = [0] * self.k
-        coeff.append(1)
-        coeff.append(-1)
-        return np.polynomial.legendre.legder(((-1) ** self.k) * 0.5 * np.array(coeff))
-
-    def getRightCorrectionFunctionGrad(self):
-        coeff = [0] * self.k
-        coeff.append(1)
-        coeff.append(1)
-        return np.polynomial.legendre.legder(0.5 * np.array(coeff))
-
-    # Helper functions to plot the various functions
-    def plotBasisFunctions(self):
-        x = np.linspace(-1.0, 1.0, 50)
-        y0 = np.polynomial.legendre.legval(x, self.getBasis0())
-        y1 = np.polynomial.legendre.legval(x, self.getBasis1())
-        y2 = np.polynomial.legendre.legval(x, self.getBasis2())
-        y3 = np.polynomial.legendre.legval(x, self.getBasis3())
-        plt.plot(x, y0)
-        plt.plot(x, y1)
-        plt.plot(x, y2)
-        plt.plot(x, y3)
-
     def plotLocalSolution(self):
         x = np.linspace(-1.0, 1.0, 50)
-        y = np.polynomial.legendre.legval(x, self.solutionBasis)
+        y = polyval(x, self.solutionBasis)
         x = np.linspace(self.x - self.dx / 2, self.x + self.dx / 2, 50)
         plt.plot(x, y)
 
-    def plotLocalDiscontinuousFlux(self):
+    def plotDiscontinuousFlux(self):
         x = np.linspace(-1.0, 1.0, 50)
-        y = np.polynomial.legendre.legval(x, self.fluxBasis)
+        y = polyval(x, self.fluxBasis)
         x = np.linspace(self.x - self.dx / 2, self.x + self.dx / 2, 50)
         plt.plot(x, y)
 
-    def plotLocalContinuousFlux(self):
+    def plotContinuousFlux(self):
         x = np.linspace(-1.0, 1.0, 50)
-        y = np.polynomial.legendre.legval(x, self.fluxContinuousBasis)
+        y = polyval(x, self.fluxContinuousBasis)
         x = np.linspace(self.x - self.dx / 2, self.x + self.dx / 2, 50)
         plt.plot(x, y)
 
     def plotLocalContinuousFluxGrad(self):
         x = np.linspace(-1.0, 1.0, 50)
-        y1 = np.polynomial.legendre.legval(x, np.polynomial.legendre.legder(self.fluxContinuousBasis))
-        y2 = np.polynomial.legendre.legval(x, self.fluxContinuousGradBasis)
+        y = polyval(x, self.fluxContinuousGradBasis)
         x = np.linspace(self.x - self.dx / 2, self.x + self.dx / 2, 50)
-        plt.plot(x, y1)
-        plt.plot(x, y2)
+        plt.plot(x, y)
 
     def plotCorrectionFunctions(self):
-        leftCF = self.getLeftCorrectionFunction()
-        rightCF = self.getRightCorrectionFunction()
+        leftCF = self.basis.getLeftCorrectionFunction()
+        rightCF = self.basis.getRightCorrectionFunction()
         x = np.linspace(-1.0, 1.0, 100)
-        ly = np.polynomial.legendre.legval(x, leftCF)
-        ry = np.polynomial.legendre.legval(x, rightCF)
+        ly = polyval(x, leftCF)
+        ry = polyval(x, rightCF)
         plt.plot(x, ly)
         plt.plot(x, ry)
