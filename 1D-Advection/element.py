@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class Element:
-    def __init__(self, k, dx, x):
+    def __init__(self, k, dx, x, solptns=0):
         self.left = None
         self.right = None
         self.k = k
@@ -14,14 +14,25 @@ class Element:
         self.fluxGrad = np.zeros(k)
         self.fluxContinuous = np.zeros(k)
         self.fluxContinuousGrad = np.zeros(k)
+        self.setSolutionPoints(solptns)
         # Use equally spaced points for now
         self.solutionPts = np.linspace(-1.0, 1.0, k)
+        # Use Gauss Points
+        #self.solutionPts = np.array([-0.861136, -0.339981, 0.339981, 0.861136])
         # rk4 data
         self.k0 = np.zeros(k)
         self.k1 = np.zeros(k)
         self.k2 = np.zeros(k)
         self.k3 = np.zeros(k)
         self.k4 = np.zeros(k)
+
+    def setSolutionPoints(self, solptns):
+        if solptns == 0:
+            # Use equally spaced points
+            self.solutionPts = np.linspace(-1.0, 1.0, self.k)
+        if solptns == 1:
+            # Use Gauss Points
+            self.solutionPts = np.array([-0.861136, -0.339981, 0.339981, 0.861136])
 
     def setLeftElement(self, l):
         self.left = l
@@ -77,10 +88,10 @@ class Element:
 
     def getSolution(self):
         #return np.polynomial.legendre.legval(self.solutionPts, self.solutionBasis)
-        return self.solution
+        return self.solution.copy()
 
     def getLocalSolutionPoints(self):
-        return self.solutionPts
+        return self.solutionPts.copy()
 
     def getGlobalSolutionPoints(self):
         return self.x + ((self.solutionPts) * self.dx) / 2
@@ -92,7 +103,7 @@ class Element:
         return (2.0 / self.dx) * self.getLocalSolutionGradient()
 
     def getLocalFlux(self):
-        return self.flux
+        return self.flux.copy()
 
     def getGlobalFlux(self):
         return (2.0 / self.dx) * self.flux
@@ -104,13 +115,13 @@ class Element:
         return (2.0 / self.dx) * self.getLocalFluxGradient()
 
     def getLocalContinuousFlux(self):
-        return self.fluxContinuous
+        return self.fluxContinuous.copy()
 
     def getGlobalContinuousFlux(self):
         return (2.0 / self.dx) * self.getLocalContinuousFlux()
 
     def getLocalContinuousFluxGradient(self):
-        return self.fluxContinuousGrad
+        return self.fluxContinuousGrad.copy()
 
     def getGlobalContinuousFluxGradient(self):
         return (2.0 / self.dx) * self.getLocalContinuousFluxGradient()
@@ -143,9 +154,11 @@ class Element:
         return self.rightRoeSolution
 
     def getLeftRoeFlux(self, a=1):
+        # Convert from local to global
         return a * (2.0 / self.dx) * self.leftRoeFlux
 
     def getRightRoeFlux(self, a=1):
+        # Convert from local to global
         return a * (2.0 / self.dx) * self.rightRoeFlux
 
     def setLeftUpwindFlux(self, f):
@@ -158,26 +171,26 @@ class Element:
 
     # Functions for rk4
     def storeK0(self):
-        self.k0 = self.solution
+        self.k0 = self.getSolution()
 
     def storeK1AndUpdate(self, dt):
-        self.k1 = self.getdudt()
+        self.k1 = self.getdudt().copy()
         # self.setSolutionPointValues(self.k0 + dt * (self.k1 / 2))
-        self.setSolutionPointValues(self.solution + dt * (self.k1 / 2))
+        self.setSolutionPointValues(self.getSolution() + (dt / 2.0) * self.k1)
 
     def storeK2AndUpdate(self, dt):
-        self.k2 = self.getdudt()
+        self.k2 = self.getdudt().copy()
         # self.setSolutionPointValues(self.k0 + dt * (self.k2 / 2))
-        self.setSolutionPointValues(self.solution + dt * (self.k2 / 2))
+        self.setSolutionPointValues(self.getSolution() + (dt / 2.0) * self.k2)
 
     def storeK3AndUpdate(self, dt):
-        self.k3 = self.getdudt()
+        self.k3 = self.getdudt().copy()
         # self.setSolutionPointValues(self.k0 + dt * self.k3)
-        self.setSolutionPointValues(self.solution + dt * self.k3)
+        self.setSolutionPointValues(self.getSolution() + dt * self.k3)
 
     def storeK4AndUpdate(self, dt):
-        self.k4 = self.getdudt()
-        vals = self.k0 + (1.0 / 6.0) * dt * (self.k1 + 2*self.k2 + 2*self.k3 + self.k4)
+        self.k4 = self.getdudt().copy()
+        vals = self.k0 + (dt / 6.0) * (self.k1 + 2*self.k2 + 2*self.k3 + self.k4)
         self.setSolutionPointValues(vals)
 
     # Correction Functions (Radau Polynomials)

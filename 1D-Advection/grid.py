@@ -49,14 +49,14 @@ class Grid:
             ur = rightElement.getLeftSolution()
             fr = rightElement.getLeftRoeFlux()
             au = a
-            fUpwind = (fl + fr) * 0.5
+            # fUpwind = 0
             if ur != ul:
                 au = (fr - fl) / (ur - ul)
-            if au >= 0:
-                fUpwind = fl
-            else:
-                fUpwind = fr
-            # fUpwind = 0.5 * (fl + fr) - 0.5 * (abs(au)) * (ur - ul)
+            # if au >= 0:
+            #     fUpwind = fl
+            # else:
+            #     fUpwind = fr
+            fUpwind = 0.5 * (fl + fr) - 0.5 * (abs(au)) * (ur - ul)
             leftElement.setRightUpwindFlux(fUpwind)
             rightElement.setLeftUpwindFlux(fUpwind)
             # print("fl: " + str(fl) + " fr: " + str(fr) + " fUpwind: " + str(fUpwind) + " fUpwind2: " + str(fUpwind2))
@@ -106,7 +106,11 @@ class Grid:
 
     def eulerStep(self, dt):
         self.roeFlux()
+        self.calculateContinuousFlux()
         self.calculateContinuousFluxGradient()
+        plt.figure("Euler")
+        self.plotLocalDiscontinuousFlux()
+        self.plotLocalContinuousFlux()
         # Update solution using Euler time marching
         element = self.leftElement
         for i in range(self.nx):
@@ -116,41 +120,51 @@ class Grid:
     def rk4Step(self, dt):
         # Store initial solution in k0
         self.storeK0()
+        plt.figure("ICs")
+        self.plotSolution()
 
         # Calculate k1, store k1 and update solution
         self.roeFlux()
         self.calculateContinuousFlux()
         self.calculateContinuousFluxGradient()
-        # plt.figure("K1")
-        # self.plotLocalDiscontinuousFlux()
-        # self.plotLocalContinuousFlux()
+        plt.figure("K1")
+        self.plotLocalDiscontinuousFlux()
+        self.plotLocalContinuousFlux()
+        self.plotSolution()
+        self.plotLocalContinuousFluxGrad()
         self.storeK1AndUpdate(dt)
 
         # Calculate k2, store k2 and update solution
         self.roeFlux()
         self.calculateContinuousFlux()
         self.calculateContinuousFluxGradient()
-        # plt.figure("K2")
-        # self.plotLocalDiscontinuousFlux()
-        # self.plotLocalContinuousFlux()
+        plt.figure("K2")
+        self.plotLocalDiscontinuousFlux()
+        self.plotLocalContinuousFlux()
+        self.plotSolution()
+        self.plotLocalContinuousFluxGrad()
         self.storeK2AndUpdate(dt)
 
         # Calculate k3, store k3 and update solution
         self.roeFlux()
         self.calculateContinuousFlux()
         self.calculateContinuousFluxGradient()
-        # plt.figure("K3")
-        # self.plotLocalDiscontinuousFlux()
-        # self.plotLocalContinuousFlux()
+        plt.figure("K3")
+        self.plotLocalDiscontinuousFlux()
+        self.plotLocalContinuousFlux()
+        self.plotSolution()
+        self.plotLocalContinuousFluxGrad()
         self.storeK3AndUpdate(dt)
 
         # Calculate k4, store k4 and update solution
         self.roeFlux()
         self.calculateContinuousFlux()
         self.calculateContinuousFluxGradient()
-        # plt.figure("K4")
-        # self.plotLocalDiscontinuousFlux()
-        # self.plotLocalContinuousFlux()
+        plt.figure("K4")
+        self.plotLocalDiscontinuousFlux()
+        self.plotLocalContinuousFlux()
+        self.plotSolution()
+        self.plotLocalContinuousFluxGrad()
         self.storeK4AndUpdate(dt)
 
     def getdx(self):
