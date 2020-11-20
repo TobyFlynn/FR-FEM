@@ -39,46 +39,170 @@ class Grid:
         self.leftElement.setLeftElement(self.rightElement)
         self.rightElement.setRightElement(self.leftElement)
 
-    # Check whether using correct flux here
     # Periodic boundary conditions
     def roeFlux(self, a=1):
         leftElement = self.leftElement
-        for i in range(nx):
+        for i in range(self.nx):
             rightElement = leftElement.getRightElement()
             ul = leftElement.getRightSolution()
-            fl = leftElement.getRightFlux()
+            fl = leftElement.getRightRoeFlux()
             ur = rightElement.getLeftSolution()
-            fr = rightElement.getLeftFlux()
+            fr = rightElement.getLeftRoeFlux()
             au = a
+            fUpwind = (fl + fr) * 0.5
             if ur != ul:
                 au = (fr - fl) / (ur - ul)
-            fUpwind = 0.5 * (fl + fr) - 0.5 * (abs(au)) * (ur - ul)
+            if au >= 0:
+                fUpwind = fl
+            else:
+                fUpwind = fr
+            # fUpwind = 0.5 * (fl + fr) - 0.5 * (abs(au)) * (ur - ul)
             leftElement.setRightUpwindFlux(fUpwind)
             rightElement.setLeftUpwindFlux(fUpwind)
-            leftElement = leftElement.getRightElement()
+            # print("fl: " + str(fl) + " fr: " + str(fr) + " fUpwind: " + str(fUpwind) + " fUpwind2: " + str(fUpwind2))
+            leftElement = rightElement
+
+    def calculateContinuousFlux(self):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.calculateContinuousFlux()
+            element = element.getRightElement()
+
+    def calculateContinuousFluxGradient(self):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.calculateContinuousFluxGradient()
+            element = element.getRightElement()
+
+    def storeK0(self):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.storeK0()
+            element = element.getRightElement()
+
+    def storeK1AndUpdate(self, dt):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.storeK1AndUpdate(dt)
+            element = element.getRightElement()
+
+    def storeK2AndUpdate(self, dt):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.storeK2AndUpdate(dt)
+            element = element.getRightElement()
+
+    def storeK3AndUpdate(self, dt):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.storeK3AndUpdate(dt)
+            element = element.getRightElement()
+
+    def storeK4AndUpdate(self, dt):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.storeK4AndUpdate(dt)
+            element = element.getRightElement()
+
+    def eulerStep(self, dt):
+        self.roeFlux()
+        self.calculateContinuousFluxGradient()
+        # Update solution using Euler time marching
+        element = self.leftElement
+        for i in range(self.nx):
+            element.setSolutionPointValues(element.getSolution() + dt * element.getdudt())
+            element = element.getRightElement()
+
+    def rk4Step(self, dt):
+        # Store initial solution in k0
+        self.storeK0()
+
+        # Calculate k1, store k1 and update solution
+        self.roeFlux()
+        self.calculateContinuousFlux()
+        self.calculateContinuousFluxGradient()
+        # plt.figure("K1")
+        # self.plotLocalDiscontinuousFlux()
+        # self.plotLocalContinuousFlux()
+        self.storeK1AndUpdate(dt)
+
+        # Calculate k2, store k2 and update solution
+        self.roeFlux()
+        self.calculateContinuousFlux()
+        self.calculateContinuousFluxGradient()
+        # plt.figure("K2")
+        # self.plotLocalDiscontinuousFlux()
+        # self.plotLocalContinuousFlux()
+        self.storeK2AndUpdate(dt)
+
+        # Calculate k3, store k3 and update solution
+        self.roeFlux()
+        self.calculateContinuousFlux()
+        self.calculateContinuousFluxGradient()
+        # plt.figure("K3")
+        # self.plotLocalDiscontinuousFlux()
+        # self.plotLocalContinuousFlux()
+        self.storeK3AndUpdate(dt)
+
+        # Calculate k4, store k4 and update solution
+        self.roeFlux()
+        self.calculateContinuousFlux()
+        self.calculateContinuousFluxGradient()
+        # plt.figure("K4")
+        # self.plotLocalDiscontinuousFlux()
+        # self.plotLocalContinuousFlux()
+        self.storeK4AndUpdate(dt)
+
+    def getdx(self):
+        return self.dx
+
+    def plotSolution(self):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.plotLocalSolution()
+            element = element.getRightElement()
+
+    def plotLocalDiscontinuousFlux(self):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.plotLocalDiscontinuousFlux()
+            element = element.getRightElement()
+
+    def plotLocalContinuousFlux(self):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.plotLocalContinuousFlux()
+            element = element.getRightElement()
+
+    def plotLocalContinuousFluxGrad(self):
+        element = self.leftElement
+        for i in range(self.nx):
+            element.plotLocalContinuousFluxGrad()
+            element = element.getRightElement()
 
     def plot(self):
+        plt.figure("Solution")
         currentElement = self.leftElement
         yVal = []
         xVal = []
-        fluxVal = []
-        fluxGrad = []
+        # fluxVal = []
+        # fluxGrad = []
         # Plot solution
         for i in range(self.nx):
             solution = currentElement.getSolution()
-            flux = currentElement.getGlobalFlux()
-            fluxG = currentElement.getGlobalFluxGradient()
+            # flux = currentElement.getGlobalFlux()
+            # fluxG = currentElement.getGlobalFluxGradient()
             x = i * self.dx
             # Elements share boundaries so don't get right boundary
             for n in range(self.k - 1):
                 yVal.append(solution[n])
                 xVal.append(x + n * (self.dx / (self.k - 1)))
-                fluxVal.append(flux[n])
-                fluxGrad.append(fluxG[n])
+                # fluxVal.append(flux[n])
+                # fluxGrad.append(fluxG[n])
 
             currentElement = currentElement.getRightElement()
 
         plt.plot(xVal, yVal)
-        plt.plot(xVal, fluxVal)
-        plt.plot(xVal, fluxGrad)
+        # plt.plot(xVal, fluxVal)
+        # plt.plot(xVal, fluxGrad)
         plt.show()
