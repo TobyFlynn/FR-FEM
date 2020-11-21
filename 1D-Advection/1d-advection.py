@@ -26,7 +26,7 @@ fluxFunc = lambda x, a=a: a * x
 # fluxFunc = lambda x, a=a: a * (x * x) * 0.5
 
 e = Element(4, 1, 1, fluxFunc)
-e.plotBasisFunctions()
+#e.plotBasisFunctions()
 e.plotCorrectionFunctions()
 plt.show()
 

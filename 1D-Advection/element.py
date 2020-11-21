@@ -3,6 +3,7 @@ from numpy.polynomial.polynomial import polyval, polyadd, polyder
 import matplotlib.pyplot as plt
 
 from scheme_dg import SchemeDG
+from scheme_g2 import SchemeG2
 
 # For now assume 4 points
 class Element:
@@ -20,7 +21,8 @@ class Element:
         self.fluxContinuous = np.zeros(k)
         self.fluxContinuousGrad = np.zeros(k)
         self.setSolutionPoints(solpoints)
-        self.scheme = SchemeDG(self.solutionPts)
+        # self.scheme = SchemeDG(self.solutionPts)
+        self.scheme = SchemeG2(self.solutionPts)
         self.k0 = np.zeros(k)
         self.k1 = np.zeros(k)
         self.k2 = np.zeros(k)
