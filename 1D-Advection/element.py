@@ -37,10 +37,30 @@ class Element:
             self.solutionPts = np.linspace(-1.0, 1.0, self.k)
         if solpoints == 1:
             # Use Gauss Points
-            self.solutionPts = np.array([-0.861136, -0.339981, 0.339981, 0.861136])
+            if self.k == 1:
+                self.solutionPts = np.array([0.0])
+            elif self.k == 2:
+                self.solutionPts = np.array([-0.57735, 0.57735])
+            elif self.k == 3:
+                self.solutionPts = np.array([-0.774597, 0.0, 0.774597])
+            elif self.k == 4:
+                self.solutionPts = np.array([-0.861136, -0.339981, 0.339981, 0.861136])
+            elif self.k == 5:
+                self.solutionPts = np.array([-0.90618, -0.538469, 0.0, 0.538469, 0.90618])
+            else:
+                raise Exception("Gauss points above 5th order are not currently implemented")
         if solpoints == 2:
             # Use Lobatto Points
-            self.solutionPts = np.array([-1.0, -0.447214, 0.447214, 1.0])
+            if self.k == 3:
+                self.solutionPts = np.array([-1.0, 0.0, 1.0])
+            elif self.k == 4:
+                self.solutionPts = np.array([-1.0, -0.447214, 0.447214, 1.0])
+            elif self.k == 5:
+                self.solutionPts = np.array([-1.0, -0.654654, 0.0, 0.654654, 1.0])
+            elif self.k == 6:
+                self.solutionPts = np.array([-1.0, -0.765055, -0.285232, 0.285232, 0.765055, 1.0])
+            else:
+                raise Exception("Lobatto points above 6th order or below 3rd order are not currently implemented")
 
     def setLeftElement(self, l):
         self.left = l

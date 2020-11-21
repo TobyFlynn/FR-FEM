@@ -9,7 +9,7 @@ nx = 10
 # Number of time steps
 nt = 15
 # Number of solution points in an element
-k = 4
+k = 6
 # Wave speed
 a = 1.0
 
@@ -36,8 +36,16 @@ solutionPoints = 2
 # Scheme, 0 = DG, 1 = G2
 scheme = 0
 
-# CFL number (0.9 * CFL limit for rk4)
-CFL = 0.9 * 0.145
+# CFL number (0.9 * CFL limit for rk4, only exact for k = 4, others are a guess)
+CFL = 0.9
+if k == 3:
+    CFL *= 0.145
+elif k == 4:
+    CFL *= 0.145
+elif k == 5:
+    CFL *= 0.1
+elif k == 6:
+    CFL *= 0.05
 
 # Create 1D structured grid and set initial condition
 grid = StructuredGrid(interval, nx, k, a, fluxFunc, ic, solutionPoints, scheme)
