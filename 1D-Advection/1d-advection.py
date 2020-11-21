@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 # Number of elements
 nx = 10
 # Number of time steps
-nt = 15
+nt = 500
 # Number of solution points in an element
-k = 6
+k = 4
 # Wave speed
 a = 1.0
 
@@ -67,5 +67,5 @@ for i in range(nt):
 # Plot grid
 plt.figure("Solution Basis")
 grid.plotSolution()
-grid.plot()
+grid.plot(dt * nt)
 plt.show()

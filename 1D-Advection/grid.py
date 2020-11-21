@@ -127,7 +127,7 @@ class Grid:
             element.plotLocalContinuousFluxGrad()
             element = element.getRightElement()
 
-    def plot(self):
+    def plot(self, t):
         plt.figure("Solution Points")
         currentElement = self.leftElement
         yVal = []
@@ -141,7 +141,9 @@ class Grid:
                 yVal.append(solution[n])
                 xVal.append(globalSolutionPoints[n])
             currentElement = currentElement.getRightElement()
+        yValSol = self.ic((np.array(xVal) - self.a * t) % 1.0)
         plt.plot(xVal, yVal)
+        plt.plot(xVal, yValSol)
 
 class StructuredGrid(Grid):
     def __init__(self, interval, nx, k, a, flux, ic, solutionPoints, scheme):
@@ -151,6 +153,7 @@ class StructuredGrid(Grid):
         self.k = k
         self.a = a
         self.fluxFunc = flux
+        self.ic = ic
 
         # Generate the required elements
         x = interval[0]
