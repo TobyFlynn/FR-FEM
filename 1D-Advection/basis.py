@@ -1,5 +1,7 @@
 import numpy as np
+from numpy.polynomial.polynomial import polyval, polyadd, polyder
 from scipy.interpolate import lagrange
+import matplotlib.pyplot as plt
 
 # For now assume 4 points
 class Basis:
@@ -11,20 +13,26 @@ class Basis:
         coeff.append(-1)
         coeff.append(1)
         self.leftCorrectionFunction = np.polynomial.legendre.leg2poly(((-1) ** self.k) * 0.5 * np.array(coeff))
-        self.leftCorrectionFunctionGrad = np.polynomial.polynomial.polyder(self.leftCorrectionFunction)
+        self.leftCorrectionFunctionGrad = polyder(self.leftCorrectionFunction)
         coeff = [0] * (self.k - 1)
         coeff.append(1)
         coeff.append(1)
         self.rightCorrectionFunction = np.polynomial.legendre.leg2poly((0.5 * np.array(coeff)))
-        self.rightCorrectionFunctionGrad = np.polynomial.polynomial.polyder(self.rightCorrectionFunction)
+        self.rightCorrectionFunctionGrad = polyder(self.rightCorrectionFunction)
+        # Construct basis functions
+        values = np.zeros(self.k)
+        self.basis = []
+        for i in range(self.k):
+            values[i] = 1.0
+            # Convert poly1d that lagrange returns into numpy polynomial
+            self.basis.append(np.flipud(lagrange(self.ptns, values)))
+            values[i] = 0.0
 
-
-    def getBasis(self, values):
-        # Convert poly1d that lagrange returns into numpy polynomial
-        # TODO make more efficient, don't need to interpolate each time
-        # can just calculate basis functions at start then multiply these by
-        # the values
-        return np.flipud(lagrange(self.ptns, values))
+    def getApproxFunction(self, values):
+        approx = values[0] * self.basis[0]
+        for i in range(1, self.k):
+            approx = polyadd(approx, values[i] * self.basis[i])
+        return approx
 
     def getLeftCorrectionFunction(self):
         return self.leftCorrectionFunction.copy()
@@ -37,3 +45,9 @@ class Basis:
 
     def getRightCorrectionFunctionGrad(self):
         return self.rightCorrectionFunctionGrad.copy()
+
+    def plotBasisFunctions(self):
+        x = np.linspace(-1.0, 1.0, 100)
+        for i in range(self.k):
+            y = polyval(x, self.basis[i])
+            plt.plot(x, y)

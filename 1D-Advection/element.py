@@ -57,7 +57,7 @@ class Element:
         self.updateFlux()
 
     def updateBasis(self):
-        self.solutionBasis = self.basis.getBasis(self.solution)
+        self.solutionBasis = self.basis.getApproxFunction(self.solution)
         self.leftRoeSolution = polyval(-1.0, self.solutionBasis)
         self.rightRoeSolution = polyval(1.0, self.solutionBasis)
         self.leftRoeFlux = self.fluxFunc(polyval(-1.0, self.solutionBasis))
@@ -69,7 +69,7 @@ class Element:
         self.fluxGrad = polyval(self.solutionPts, self.fluxGradBasis)
 
     def updateFluxBasis(self):
-        self.fluxBasis = self.basis.getBasis(self.flux)
+        self.fluxBasis = self.basis.getApproxFunction(self.flux)
         self.fluxGradBasis = polyder(self.fluxBasis)
 
     # Not a necessary calculation but included just for completeness

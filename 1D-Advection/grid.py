@@ -4,13 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class Grid:
-    def __init__(self, interval, nx, k, flux, ic):
+    def __init__(self, interval, nx, k, a, flux, ic):
         self.leftBoundary = interval[0]
         self.rightBoundary = interval[1]
         self.nx = nx
         intervalLen = interval[1] - interval[0]
         self.dx = intervalLen / nx
         self.k = k
+        self.a = a
         self.fluxFunc = flux
 
         # Generate the required elements
@@ -41,7 +42,7 @@ class Grid:
         self.rightElement.setRightElement(self.leftElement)
 
     # Periodic boundary conditions
-    def roeFlux(self, a=1):
+    def roeFlux(self):
         leftElement = self.leftElement
         for i in range(self.nx):
             rightElement = leftElement.getRightElement()
@@ -49,8 +50,7 @@ class Grid:
             fl = leftElement.getRightRoeFlux()
             ur = rightElement.getLeftSolution()
             fr = rightElement.getLeftRoeFlux()
-            au = a
-            # fUpwind = 0
+            au = self.a
             if ur != ul:
                 au = (fr - fl) / (ur - ul)
             # if au >= 0:
@@ -60,7 +60,6 @@ class Grid:
             fUpwind = 0.5 * (fl + fr) - 0.5 * (abs(au)) * (ur - ul)
             leftElement.setRightUpwindFlux(fUpwind)
             rightElement.setLeftUpwindFlux(fUpwind)
-            # print("fl: " + str(fl) + " fr: " + str(fr) + " fUpwind: " + str(fUpwind) + " fUpwind2: " + str(fUpwind2))
             leftElement = rightElement
 
     def calculateContinuousFlux(self):
@@ -133,9 +132,9 @@ class Grid:
         self.calculateContinuousFlux()
         self.calculateContinuousFluxGradient()
         self.storeK4AndUpdate(dt)
-        plt.figure("RK4")
-        self.plotContinuousFlux()
-        self.plotLocalContinuousFluxGrad()
+        # plt.figure("RK4")
+        # self.plotContinuousFlux()
+        # self.plotLocalContinuousFluxGrad()
 
     def getdx(self):
         return self.dx
@@ -169,23 +168,15 @@ class Grid:
         currentElement = self.leftElement
         yVal = []
         xVal = []
-        # fluxVal = []
-        # fluxGrad = []
         # Plot solution
         for i in range(self.nx):
             solution = currentElement.getSolution()
-            # flux = currentElement.getGlobalFlux()
-            # fluxG = currentElement.getGlobalFluxGradient()
             x = i * self.dx
             # Elements share boundaries so don't get right boundary
             for n in range(self.k - 1):
                 yVal.append(solution[n])
                 xVal.append(x + n * (self.dx / (self.k - 1)))
-                # fluxVal.append(flux[n])
-                # fluxGrad.append(fluxG[n])
 
             currentElement = currentElement.getRightElement()
 
         plt.plot(xVal, yVal)
-        # plt.plot(xVal, fluxVal)
-        # plt.plot(xVal, fluxGrad)
