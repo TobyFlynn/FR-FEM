@@ -2,11 +2,11 @@ import numpy as np
 from numpy.polynomial.polynomial import polyval, polyadd, polyder
 import matplotlib.pyplot as plt
 
-from basis import Basis
+from basis_dg import BasisDG
 
 # For now assume 4 points
 class Element:
-    def __init__(self, k, dx, x, fluxFunc, solptns=2, basisFunc=1):
+    def __init__(self, k, dx, x, fluxFunc, solpoints=2):
         self.left = None
         self.right = None
         self.k = k
@@ -19,22 +19,22 @@ class Element:
         self.fluxGrad = np.zeros(k)
         self.fluxContinuous = np.zeros(k)
         self.fluxContinuousGrad = np.zeros(k)
-        self.setSolutionPoints(solptns)
-        self.basis = Basis(self.solutionPts)
+        self.setSolutionPoints(solpoints)
+        self.basis = BasisDG(self.solutionPts)
         self.k0 = np.zeros(k)
         self.k1 = np.zeros(k)
         self.k2 = np.zeros(k)
         self.k3 = np.zeros(k)
         self.k4 = np.zeros(k)
 
-    def setSolutionPoints(self, solptns):
-        if solptns == 0:
+    def setSolutionPoints(self, solpoints):
+        if solpoints == 0:
             # Use equally spaced points
             self.solutionPts = np.linspace(-1.0, 1.0, self.k)
-        if solptns == 1:
+        if solpoints == 1:
             # Use Gauss Points
             self.solutionPts = np.array([-0.861136, -0.339981, 0.339981, 0.861136])
-        if solptns == 2:
+        if solpoints == 2:
             # Use Lobatto Points
             self.solutionPts = np.array([-1.0, -0.447214, 0.447214, 1.0])
 
