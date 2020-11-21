@@ -6,25 +6,26 @@ from basis import Basis
 
 # For now assume 4 points
 class Element:
-    def __init__(self, k, dx, x, solptns=2, basisFunc=1):
+    def __init__(self, k, dx, x, fluxFunc, solptns=2, basisFunc=1):
         self.left = None
         self.right = None
         self.k = k
         # Centre of element
         self.x = x + dx / 2
         self.dx = dx
+        self.fluxFunc = fluxFunc
         self.solution = np.zeros(k)
         self.flux = np.zeros(k)
         self.fluxGrad = np.zeros(k)
-        # self.fluxContinuous = np.zeros(k)
-        # self.fluxContinuousGrad = np.zeros(k)
+        self.fluxContinuous = np.zeros(k)
+        self.fluxContinuousGrad = np.zeros(k)
         self.setSolutionPoints(solptns)
         self.basis = Basis(self.solutionPts)
-        # self.k0 = np.zeros(k)
-        # self.k1 = np.zeros(k)
-        # self.k2 = np.zeros(k)
-        # self.k3 = np.zeros(k)
-        # self.k4 = np.zeros(k)
+        self.k0 = np.zeros(k)
+        self.k1 = np.zeros(k)
+        self.k2 = np.zeros(k)
+        self.k3 = np.zeros(k)
+        self.k4 = np.zeros(k)
 
     def setSolutionPoints(self, solptns):
         if solptns == 0:
@@ -55,15 +56,15 @@ class Element:
         self.updateBasis()
         self.updateFlux()
 
-    def updateBasis(self, a=1):
+    def updateBasis(self):
         self.solutionBasis = self.basis.getBasis(self.solution)
         self.leftRoeSolution = polyval(-1.0, self.solutionBasis)
         self.rightRoeSolution = polyval(1.0, self.solutionBasis)
-        self.leftRoeFlux = a * polyval(-1.0, self.solutionBasis)
-        self.rightRoeFlux = a * polyval(1.0, self.solutionBasis)
+        self.leftRoeFlux = self.fluxFunc(polyval(-1.0, self.solutionBasis))
+        self.rightRoeFlux = self.fluxFunc(polyval(1.0, self.solutionBasis))
 
-    def updateFlux(self, a=1):
-        self.flux = a * self.solution
+    def updateFlux(self):
+        self.flux = self.fluxFunc(self.solution)
         self.updateFluxBasis()
         self.fluxGrad = polyval(self.solutionPts, self.fluxGradBasis)
 

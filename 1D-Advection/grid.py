@@ -4,17 +4,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class Grid:
-    def __init__(self, interval, nx, k, ic):
+    def __init__(self, interval, nx, k, flux, ic):
         self.leftBoundary = interval[0]
         self.rightBoundary = interval[1]
         self.nx = nx
         intervalLen = interval[1] - interval[0]
         self.dx = intervalLen / nx
         self.k = k
+        self.fluxFunc = flux
 
         # Generate the required elements
         x = self.leftBoundary
-        self.leftElement = Element(self.k, self.dx, x)
+        self.leftElement = Element(self.k, self.dx, x, self.fluxFunc)
         self.leftElement.setLeftElement(None)
         # Set initial conditions
         solutionPts = self.leftElement.getGlobalSolutionPoints()
@@ -25,7 +26,7 @@ class Grid:
         # Construct 1D regular mesh of elements
         for i in range(1, self.nx):
             x = self.leftBoundary + i * self.dx
-            newElement = Element(self.k, self.dx, x)
+            newElement = Element(self.k, self.dx, x, self.fluxFunc)
             newElement.setLeftElement(prevElement)
             prevElement.setRightElement(newElement)
             # Set initial conditions
@@ -102,19 +103,6 @@ class Grid:
         element = self.leftElement
         for i in range(self.nx):
             element.storeK4AndUpdate(dt)
-            element = element.getRightElement()
-
-    def eulerStep(self, dt):
-        self.roeFlux()
-        self.calculateContinuousFlux()
-        self.calculateContinuousFluxGradient()
-        plt.figure("Euler")
-        self.plotContinuousFlux()
-        self.plotLocalContinuousFluxGrad()
-        # Update solution using Euler time marching
-        element = self.leftElement
-        for i in range(self.nx):
-            element.setSolutionPointValues(element.getSolution() + dt * element.getdudt())
             element = element.getRightElement()
 
     # Check whether only need to consdier tn + h/2 for boundary conditions
