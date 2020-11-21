@@ -2,7 +2,7 @@ import numpy as np
 from numpy.polynomial.polynomial import polyval, polyadd, polyder
 import matplotlib.pyplot as plt
 
-from basis_dg import BasisDG
+from scheme_dg import SchemeDG
 
 # For now assume 4 points
 class Element:
@@ -20,7 +20,7 @@ class Element:
         self.fluxContinuous = np.zeros(k)
         self.fluxContinuousGrad = np.zeros(k)
         self.setSolutionPoints(solpoints)
-        self.basis = BasisDG(self.solutionPts)
+        self.scheme = SchemeDG(self.solutionPts)
         self.k0 = np.zeros(k)
         self.k1 = np.zeros(k)
         self.k2 = np.zeros(k)
@@ -53,39 +53,39 @@ class Element:
     def setSolutionPointValues(self, values):
         for x in range(self.k):
             self.solution[x] = values[x]
-        self.updateBasis()
+        self.updateSolutionPoly()
         self.updateFlux()
 
-    def updateBasis(self):
-        self.solutionBasis = self.basis.getApproxFunction(self.solution)
-        self.leftRoeSolution = polyval(-1.0, self.solutionBasis)
-        self.rightRoeSolution = polyval(1.0, self.solutionBasis)
-        self.leftRoeFlux = self.fluxFunc(polyval(-1.0, self.solutionBasis))
-        self.rightRoeFlux = self.fluxFunc(polyval(1.0, self.solutionBasis))
+    def updateSolutionPoly(self):
+        self.solutionPoly = self.scheme.getApproxFunction(self.solution)
+        self.leftRoeSolution = polyval(-1.0, self.solutionPoly)
+        self.rightRoeSolution = polyval(1.0, self.solutionPoly)
+        self.leftRoeFlux = self.fluxFunc(polyval(-1.0, self.solutionPoly))
+        self.rightRoeFlux = self.fluxFunc(polyval(1.0, self.solutionPoly))
 
     def updateFlux(self):
         self.flux = self.fluxFunc(self.solution)
-        self.updateFluxBasis()
-        self.fluxGrad = polyval(self.solutionPts, self.fluxGradBasis)
+        self.updateFluxPoly()
+        self.fluxGrad = polyval(self.solutionPts, self.fluxGradPoly)
 
-    def updateFluxBasis(self):
-        self.fluxBasis = self.basis.getApproxFunction(self.flux)
-        self.fluxGradBasis = polyder(self.fluxBasis)
+    def updateFluxPoly(self):
+        self.fluxPoly = self.scheme.getApproxFunction(self.flux)
+        self.fluxGradPoly = polyder(self.fluxPoly)
 
     # Not a necessary calculation but included just for completeness
     def calculateContinuousFlux(self):
-        correctionFunL = (self.flUpwind - self.leftRoeFlux) * self.basis.getLeftCorrectionFunction()
-        correctionFunR = (self.frUpwind - self.rightRoeFlux) * self.basis.getRightCorrectionFunction()
-        self.fluxContinuousBasis = polyadd(self.fluxBasis, correctionFunL)
-        self.fluxContinuousBasis = polyadd(self.fluxContinuousBasis, correctionFunR)
-        self.fluxContinuous = polyval(self.solutionPts, self.fluxContinuousBasis)
+        correctionFunL = (self.flUpwind - self.leftRoeFlux) * self.scheme.getLeftCorrectionFunction()
+        correctionFunR = (self.frUpwind - self.rightRoeFlux) * self.scheme.getRightCorrectionFunction()
+        self.fluxContinuousPoly = polyadd(self.fluxPoly, correctionFunL)
+        self.fluxContinuousPoly = polyadd(self.fluxContinuousPoly, correctionFunR)
+        self.fluxContinuous = polyval(self.solutionPts, self.fluxContinuousPoly)
 
     def calculateContinuousFluxGradient(self):
-        correctionFunGradL = (self.flUpwind - self.leftRoeFlux) * self.basis.getLeftCorrectionFunctionGrad()
-        correctionFunGradR = (self.frUpwind - self.rightRoeFlux) * self.basis.getRightCorrectionFunctionGrad()
-        self.fluxContinuousGradBasis = polyadd(self.fluxGradBasis, correctionFunGradL)
-        self.fluxContinuousGradBasis = polyadd(self.fluxContinuousGradBasis, correctionFunGradR)
-        self.fluxContinuousGrad = polyval(self.solutionPts, self.fluxContinuousGradBasis)
+        correctionFunGradL = (self.flUpwind - self.leftRoeFlux) * self.scheme.getLeftCorrectionFunctionGrad()
+        correctionFunGradR = (self.frUpwind - self.rightRoeFlux) * self.scheme.getRightCorrectionFunctionGrad()
+        self.fluxContinuousGradPoly = polyadd(self.fluxGradPoly, correctionFunGradL)
+        self.fluxContinuousGradPoly = polyadd(self.fluxContinuousGradPoly, correctionFunGradR)
+        self.fluxContinuousGrad = polyval(self.solutionPts, self.fluxContinuousGradPoly)
 
     def getSolution(self):
         return self.solution.copy()
@@ -163,33 +163,36 @@ class Element:
 
     def plotLocalSolution(self):
         x = np.linspace(-1.0, 1.0, 50)
-        y = polyval(x, self.solutionBasis)
+        y = polyval(x, self.solutionPoly)
         x = np.linspace(self.x - self.dx / 2, self.x + self.dx / 2, 50)
         plt.plot(x, y)
 
     def plotDiscontinuousFlux(self):
         x = np.linspace(-1.0, 1.0, 50)
-        y = polyval(x, self.fluxBasis)
+        y = polyval(x, self.fluxPoly)
         x = np.linspace(self.x - self.dx / 2, self.x + self.dx / 2, 50)
         plt.plot(x, y)
 
     def plotContinuousFlux(self):
         x = np.linspace(-1.0, 1.0, 50)
-        y = polyval(x, self.fluxContinuousBasis)
+        y = polyval(x, self.fluxContinuousPoly)
         x = np.linspace(self.x - self.dx / 2, self.x + self.dx / 2, 50)
         plt.plot(x, y)
 
     def plotLocalContinuousFluxGrad(self):
         x = np.linspace(-1.0, 1.0, 50)
-        y = polyval(x, self.fluxContinuousGradBasis)
+        y = polyval(x, self.fluxContinuousGradPoly)
         x = np.linspace(self.x - self.dx / 2, self.x + self.dx / 2, 50)
         plt.plot(x, y)
 
     def plotCorrectionFunctions(self):
-        leftCF = self.basis.getLeftCorrectionFunction()
-        rightCF = self.basis.getRightCorrectionFunction()
+        leftCF = self.scheme.getLeftCorrectionFunction()
+        rightCF = self.scheme.getRightCorrectionFunction()
         x = np.linspace(-1.0, 1.0, 100)
         ly = polyval(x, leftCF)
         ry = polyval(x, rightCF)
         plt.plot(x, ly)
         plt.plot(x, ry)
+
+    def plotBasisFunctions(self):
+        self.scheme.plotBasisFunctions()

@@ -2,10 +2,10 @@ import numpy as np
 from numpy.polynomial.polynomial import polyval, polyadd, polyder
 from scipy.interpolate import lagrange
 import matplotlib.pyplot as plt
-from basis import Basis
+from scheme import Scheme
 
 # For now assume 4 points
-class BasisDG(Basis):
+class SchemeDG(Scheme):
 
     def __init__(self, points):
         self.points = points

@@ -1,4 +1,4 @@
-class Basis:
+class Scheme:
     def __init__(self, points):
         raise NotImplementedError
 
