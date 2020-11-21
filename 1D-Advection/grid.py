@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class Grid:
-    def __init__(self, interval, nx, k, a, flux, ic):
+    def __init__(self, interval, nx, k, a, flux, ic, solutionPoints, scheme):
         self.leftBoundary = interval[0]
         self.rightBoundary = interval[1]
         self.nx = nx
@@ -16,7 +16,7 @@ class Grid:
 
         # Generate the required elements
         x = self.leftBoundary
-        self.leftElement = Element(self.k, self.dx, x, self.fluxFunc)
+        self.leftElement = Element(self.k, self.dx, x, self.fluxFunc, solutionPoints, scheme)
         self.leftElement.setLeftElement(None)
         # Set initial conditions
         solutionPts = self.leftElement.getGlobalSolutionPoints()
@@ -27,7 +27,7 @@ class Grid:
         # Construct 1D regular mesh of elements
         for i in range(1, self.nx):
             x = self.leftBoundary + i * self.dx
-            newElement = Element(self.k, self.dx, x, self.fluxFunc)
+            newElement = Element(self.k, self.dx, x, self.fluxFunc, solutionPoints, scheme)
             newElement.setLeftElement(prevElement)
             prevElement.setRightElement(newElement)
             # Set initial conditions

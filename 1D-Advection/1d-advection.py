@@ -30,8 +30,14 @@ e = Element(4, 1, 1, fluxFunc)
 e.plotCorrectionFunctions()
 plt.show()
 
+# Solution points, 0 = equidistant, 1 = Gauss, 2 = Lobatto
+solutionPoints = 2
+
+# Scheme, 0 = DG, 1 = G2
+scheme = 0
+
 # Create 1D regular grid and set initial condition
-grid = Grid(interval, nx, k, a, fluxFunc, ic)
+grid = Grid(interval, nx, k, a, fluxFunc, ic, solutionPoints, scheme)
 # CFL number (0.9 * CFL limit for rk4)
 CFL = 0.9 * 0.145
 # dt

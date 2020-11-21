@@ -7,7 +7,7 @@ from scheme_g2 import SchemeG2
 
 # For now assume 4 points
 class Element:
-    def __init__(self, k, dx, x, fluxFunc, solpoints=2):
+    def __init__(self, k, dx, x, fluxFunc, solpoints=2, scheme=0):
         self.left = None
         self.right = None
         self.k = k
@@ -21,8 +21,10 @@ class Element:
         self.fluxContinuous = np.zeros(k)
         self.fluxContinuousGrad = np.zeros(k)
         self.setSolutionPoints(solpoints)
-        # self.scheme = SchemeDG(self.solutionPts)
-        self.scheme = SchemeG2(self.solutionPts)
+        if scheme == 0:
+            self.scheme = SchemeDG(self.solutionPts)
+        else:
+            self.scheme = SchemeG2(self.solutionPts)
         self.k0 = np.zeros(k)
         self.k1 = np.zeros(k)
         self.k2 = np.zeros(k)
