@@ -1,4 +1,4 @@
-from grid import Grid
+from grid import StructuredGrid, UnstructuredGrid
 from element import Element
 
 import numpy as np
@@ -26,7 +26,7 @@ fluxFunc = lambda x, a=a: a * x
 # fluxFunc = lambda x, a=a: a * (x * x) * 0.5
 
 e = Element(4, 1, 1, fluxFunc)
-#e.plotBasisFunctions()
+e.plotBasisFunctions()
 e.plotCorrectionFunctions()
 plt.show()
 
@@ -36,12 +36,18 @@ solutionPoints = 2
 # Scheme, 0 = DG, 1 = G2
 scheme = 0
 
-# Create 1D regular grid and set initial condition
-grid = Grid(interval, nx, k, a, fluxFunc, ic, solutionPoints, scheme)
 # CFL number (0.9 * CFL limit for rk4)
 CFL = 0.9 * 0.145
-# dt
+
+# Create 1D structured grid and set initial condition
+grid = StructuredGrid(interval, nx, k, a, fluxFunc, ic, solutionPoints, scheme)
 dt = (CFL * grid.getdx()) / abs(a)
+
+# Create 1D unstructured grid and set initial conditions
+# dx = [0.2, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.2]
+# grid = UnstructuredGrid(0.0, dx, k, a, fluxFunc, ic, solutionPoints, scheme)
+# dt
+# dt = (CFL * min(grid.getdx())) / abs(a)
 
 print("CFL: " + str(CFL))
 print("dt: " + str(dt))

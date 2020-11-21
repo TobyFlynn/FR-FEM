@@ -4,42 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class Grid:
-    def __init__(self, interval, nx, k, a, flux, ic, solutionPoints, scheme):
-        self.leftBoundary = interval[0]
-        self.rightBoundary = interval[1]
-        self.nx = nx
-        intervalLen = interval[1] - interval[0]
-        self.dx = intervalLen / nx
-        self.k = k
-        self.a = a
-        self.fluxFunc = flux
-
-        # Generate the required elements
-        x = self.leftBoundary
-        self.leftElement = Element(self.k, self.dx, x, self.fluxFunc, solutionPoints, scheme)
-        self.leftElement.setLeftElement(None)
-        # Set initial conditions
-        solutionPts = self.leftElement.getGlobalSolutionPoints()
-        self.leftElement.setSolutionPointValues(ic(solutionPts))
-
-        prevElement = self.leftElement
-
-        # Construct 1D regular mesh of elements
-        for i in range(1, self.nx):
-            x = self.leftBoundary + i * self.dx
-            newElement = Element(self.k, self.dx, x, self.fluxFunc, solutionPoints, scheme)
-            newElement.setLeftElement(prevElement)
-            prevElement.setRightElement(newElement)
-            # Set initial conditions
-            solutionPts = newElement.getGlobalSolutionPoints()
-            newElement.setSolutionPointValues(ic(solutionPts))
-
-            prevElement = newElement
-
-        self.rightElement = prevElement
-        # Periodic boundary conditions
-        self.leftElement.setLeftElement(self.rightElement)
-        self.rightElement.setRightElement(self.leftElement)
 
     # Periodic boundary conditions
     def roeFlux(self):
@@ -171,12 +135,81 @@ class Grid:
         # Plot solution
         for i in range(self.nx):
             solution = currentElement.getSolution()
-            x = i * self.dx
+            globalSolutionPoints = currentElement.getGlobalSolutionPoints()
             # Elements share boundaries so don't get right boundary
             for n in range(self.k - 1):
                 yVal.append(solution[n])
-                xVal.append(x + n * (self.dx / (self.k - 1)))
-
+                xVal.append(globalSolutionPoints[n])
             currentElement = currentElement.getRightElement()
-
         plt.plot(xVal, yVal)
+
+class StructuredGrid(Grid):
+    def __init__(self, interval, nx, k, a, flux, ic, solutionPoints, scheme):
+        self.nx = nx
+        intervalLen = interval[1] - interval[0]
+        self.dx = intervalLen / nx
+        self.k = k
+        self.a = a
+        self.fluxFunc = flux
+
+        # Generate the required elements
+        x = interval[0]
+        self.leftElement = Element(self.k, self.dx, x, self.fluxFunc, solutionPoints, scheme)
+        self.leftElement.setLeftElement(None)
+        # Set initial conditions
+        solutionPts = self.leftElement.getGlobalSolutionPoints()
+        self.leftElement.setSolutionPointValues(ic(solutionPts))
+
+        prevElement = self.leftElement
+
+        # Construct 1D regular mesh of elements
+        for i in range(1, self.nx):
+            x = interval[0]+ i * self.dx
+            newElement = Element(self.k, self.dx, x, self.fluxFunc, solutionPoints, scheme)
+            newElement.setLeftElement(prevElement)
+            prevElement.setRightElement(newElement)
+            # Set initial conditions
+            solutionPts = newElement.getGlobalSolutionPoints()
+            newElement.setSolutionPointValues(ic(solutionPts))
+
+            prevElement = newElement
+
+        self.rightElement = prevElement
+        # Periodic boundary conditions
+        self.leftElement.setLeftElement(self.rightElement)
+        self.rightElement.setRightElement(self.leftElement)
+
+class UnstructuredGrid(Grid):
+    def __init__(self, start, dx, k, a, flux, ic, solutionPoints, scheme):
+        self.nx = len(dx)
+        self.dx = dx
+        self.k = k
+        self.a = a
+        self.fluxFunc = flux
+
+        # Generate the required elements
+        x = start
+        self.leftElement = Element(self.k, self.dx[0], x, self.fluxFunc, solutionPoints, scheme)
+        self.leftElement.setLeftElement(None)
+        # Set initial conditions
+        solutionPts = self.leftElement.getGlobalSolutionPoints()
+        self.leftElement.setSolutionPointValues(ic(solutionPts))
+
+        prevElement = self.leftElement
+
+        # Construct 1D regular mesh of elements
+        for i in range(1, self.nx):
+            x += self.dx[i - 1]
+            newElement = Element(self.k, self.dx[i], x, self.fluxFunc, solutionPoints, scheme)
+            newElement.setLeftElement(prevElement)
+            prevElement.setRightElement(newElement)
+            # Set initial conditions
+            solutionPts = newElement.getGlobalSolutionPoints()
+            newElement.setSolutionPointValues(ic(solutionPts))
+
+            prevElement = newElement
+
+        self.rightElement = prevElement
+        # Periodic boundary conditions
+        self.leftElement.setLeftElement(self.rightElement)
+        self.rightElement.setRightElement(self.leftElement)
