@@ -32,7 +32,7 @@ class Grid:
         ratio = 0.5
         leftElement = self.leftElement
         leftElement.setLeftCommonGrad(leftElement.getLeftGrad())
-        for i in range(self.nx):
+        for i in range(self.nx - 1):
             rightElement = leftElement.getRightElement()
             ul = leftElement.getRightGrad()
             ur = rightElement.getLeftGrad()
@@ -126,10 +126,11 @@ class Grid:
             element = element.getRightElement()
 
     def plot(self, t):
-        plt.figure("Solution Points")
+        plt.figure("Solution Points and Initial Conditions")
         currentElement = self.leftElement
         yVal = []
         xVal = []
+        icVal = []
         # Plot solution
         for i in range(self.nx):
             solution = currentElement.getSolution()
@@ -138,8 +139,10 @@ class Grid:
             for n in range(self.k - 1):
                 yVal.append(solution[n])
                 xVal.append(globalSolutionPoints[n])
+                icVal.append(self.ic(globalSolutionPoints[n]))
             currentElement = currentElement.getRightElement()
         plt.plot(xVal, yVal)
+        plt.plot(xVal, icVal)
 
 class StructuredGrid(Grid):
     def __init__(self, interval, nx, k, ic, udl, udr, solutionPoints, scheme):
@@ -174,41 +177,36 @@ class StructuredGrid(Grid):
             prevElement = newElement
 
         self.rightElement = prevElement
-        # Periodic boundary conditions
-        self.leftElement.setLeftElement(self.rightElement)
-        self.rightElement.setRightElement(self.leftElement)
 
-# class UnstructuredGrid(Grid):
-#     def __init__(self, start, dx, k, a, flux, ic, solutionPoints, scheme):
-#         self.nx = len(dx)
-#         self.dx = dx
-#         self.k = k
-#         self.a = a
-#         self.fluxFunc = flux
-#
-#         # Generate the required elements
-#         x = start
-#         self.leftElement = Element(self.k, self.dx[0], x, self.fluxFunc, solutionPoints, scheme)
-#         self.leftElement.setLeftElement(None)
-#         # Set initial conditions
-#         solutionPts = self.leftElement.getGlobalSolutionPoints()
-#         self.leftElement.setSolutionPointValues(ic(solutionPts))
-#
-#         prevElement = self.leftElement
-#
-#         # Construct 1D regular mesh of elements
-#         for i in range(1, self.nx):
-#             x += self.dx[i - 1]
-#             newElement = Element(self.k, self.dx[i], x, self.fluxFunc, solutionPoints, scheme)
-#             newElement.setLeftElement(prevElement)
-#             prevElement.setRightElement(newElement)
-#             # Set initial conditions
-#             solutionPts = newElement.getGlobalSolutionPoints()
-#             newElement.setSolutionPointValues(ic(solutionPts))
-#
-#             prevElement = newElement
-#
-#         self.rightElement = prevElement
-#         # Periodic boundary conditions
-#         self.leftElement.setLeftElement(self.rightElement)
-#         self.rightElement.setRightElement(self.leftElement)
+class UnstructuredGrid(Grid):
+    def __init__(self, start, dx, k, ic, udl, udr, solutionPoints, scheme):
+        self.nx = len(dx)
+        self.dx = dx
+        self.k = k
+        self.ic = ic
+        self.udl = udl
+        self.udr = udr
+
+        # Generate the required elements
+        x = start
+        self.leftElement = Element(self.k, self.dx[0], x, solutionPoints, scheme)
+        self.leftElement.setLeftElement(None)
+        # Set initial conditions
+        solutionPts = self.leftElement.getGlobalSolutionPoints()
+        self.leftElement.setSolutionPointValues(ic(solutionPts))
+
+        prevElement = self.leftElement
+
+        # Construct 1D regular mesh of elements
+        for i in range(1, self.nx):
+            x += self.dx[i - 1]
+            newElement = Element(self.k, self.dx[i], x, solutionPoints, scheme)
+            newElement.setLeftElement(prevElement)
+            prevElement.setRightElement(newElement)
+            # Set initial conditions
+            solutionPts = newElement.getGlobalSolutionPoints()
+            newElement.setSolutionPointValues(ic(solutionPts))
+
+            prevElement = newElement
+
+        self.rightElement = prevElement

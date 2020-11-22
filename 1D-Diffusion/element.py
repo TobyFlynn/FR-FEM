@@ -84,8 +84,8 @@ class Element:
         # self.solutionContinuousPoly = polyadd(self.solutionContinuousPoly, correctionFunR)
         # self.solutionContinuous = polyval(self.solutionPts, self.solutionContinuousPoly)
 
-        correctionFunGradL = (self.rightCommonSolution - self.leftSolution) * self.scheme.getLeftCorrectionFunctionGrad()
-        correctionFunGradR = (self.rightCommonSolution - self.leftSolution) * self.scheme.getRightCorrectionFunctionGrad()
+        correctionFunGradL = (self.leftCommonSolution - self.leftSolution) * self.scheme.getLeftCorrectionFunctionGrad()
+        correctionFunGradR = (self.rightCommonSolution - self.rightSolution) * self.scheme.getRightCorrectionFunctionGrad()
         self.solutionGradContinuousPoly = polyadd(self.solutionGradPoly, correctionFunGradL)
         self.solutionGradContinuousPoly = polyadd(self.solutionGradContinuousPoly, correctionFunGradR)
         self.solutionGradContinuous = (2.0 / self.dx) * polyval(self.solutionPts, self.solutionGradContinuousPoly)
