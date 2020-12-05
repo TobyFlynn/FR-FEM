@@ -25,10 +25,10 @@ fluxFunc = lambda x, a=a: a * x
 # Flux function for the inviscid Burgers' Equation
 # fluxFunc = lambda x, a=a: a * (x * x) * 0.5
 
-e = Element(4, 1, 1, fluxFunc)
-e.plotBasisFunctions()
-e.plotCorrectionFunctions()
-plt.show()
+# e = Element(4, 1, 1, fluxFunc)
+# e.plotBasisFunctions()
+# e.plotCorrectionFunctions()
+# plt.show()
 
 # Solution points, 0 = equidistant, 1 = Gauss, 2 = Lobatto
 solutionPoints = 2
@@ -36,8 +36,8 @@ solutionPoints = 2
 # Scheme, 0 = DG, 1 = G2
 scheme = 0
 
-# CFL number (0.9 * CFL limit for rk4, only exact for k = 4, others are a guess)
-CFL = 0.1
+# CFL number (rough guess)
+CFL = 0.25
 if k == 3:
     CFL *= 0.145
 elif k == 4:
@@ -51,16 +51,10 @@ elif k == 6:
 grid = StructuredGrid(interval, nx, k, a, fluxFunc, ic, solutionPoints, scheme)
 dt = (CFL * grid.getdx()) / abs(a)
 
-# Create 1D unstructured grid and set initial conditions
-# dx = [0.2, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.2]
-# grid = UnstructuredGrid(0.0, dx, k, a, fluxFunc, ic, solutionPoints, scheme)
-# dt
-# dt = (CFL * min(grid.getdx())) / abs(a)
-
 print("CFL: " + str(CFL))
 print("dt: " + str(dt))
 
-# Advance in time using 4th order Runge-Kutta Method
+# Advance in time using backwards Euler
 for i in range(nt):
     grid.backwardsEuler(dt)
 

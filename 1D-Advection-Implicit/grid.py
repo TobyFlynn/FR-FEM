@@ -39,17 +39,20 @@ class Grid:
             element.calculateContinuousFluxGradient()
             element = element.getRightElement()
 
+    # March in time using backwards Euler
     def backwardsEuler(self, dt):
         self.dt = dt
         un = self.getGlobalSolution()
         result, errorCode = cg(self.lo, un, tol=1e-12)
         self.setGlobalSolution(result)
 
+    # Calculate (du)/(dx)
     def calcdudx(self):
         self.roeFlux()
         self.calculateContinuousFlux()
         self.calculateContinuousFluxGradient()
 
+    # Get (du)/(dx) of all elements
     def getGlobaldudx(self):
         currentElement = self.leftElement
         dudx = []
@@ -58,7 +61,7 @@ class Grid:
             currentElement = currentElement.getRightElement()
         return dudx.copy()
 
-    # v is the latest set of guesses
+    # v is the latest set of guesses (i.e. a new solution to try)
     def mv(self, u):
         un = self.getGlobalSolution()
         self.setGlobalSolution(u)
@@ -70,6 +73,7 @@ class Grid:
     def getdx(self):
         return self.dx
 
+    # Get solution of all elements
     def getGlobalSolution(self):
         currentElement = self.leftElement
         solution = []
@@ -78,6 +82,7 @@ class Grid:
             currentElement = currentElement.getRightElement()
         return solution.copy()
 
+    # Set solution of all elements
     def setGlobalSolution(self, u):
         currentElement = self.leftElement
         for i in range(self.nx):
