@@ -50,12 +50,20 @@ class Grid:
         self.calculateContinuousFlux()
         self.calculateContinuousFluxGradient()
 
+    def getGlobaldudx(self):
+        currentElement = self.leftElement
+        dudx = []
+        for i in range(self.nx):
+            dudx.extend(currentElement.getdudx())
+            currentElement = currentElement.getRightElement()
+        return dudx.copy()
+
     # v is the latest set of guesses
     def mv(self, u):
         un = self.getGlobalSolution()
         self.setGlobalSolution(u)
         self.calcdudx()
-        grad = self.dt * np.array(self.getGlobalSolution())
+        grad = self.dt * np.array(self.getGlobaldudx())
         self.setGlobalSolution(un)
         return u + grad
 
